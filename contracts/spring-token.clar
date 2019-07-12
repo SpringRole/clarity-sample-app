@@ -15,9 +15,8 @@
 (define (allowance-of (spender principal) (owner principal))
   (default-to 0
     (get allowance
-         (fetch-entry allowances (
-                                  (owner owner)
-                                  (spender spender))))))
+         (fetch-entry allowances ((owner owner)
+                                 (spender spender))))))
 
 (define (decrease-allowance! (spender principal) (owner principal) (amount int))
   (let ((allowance (allowance-of spender owner)))
@@ -39,6 +38,11 @@
           ((allowance (+ allowance amount))))
         'true))))
 
+(define (balance-of (account principal))
+  (default-to 0
+    (get balance
+         (fetch-entry balances ((owner account))))))
+         
 ;; Mint new tokens.
 (define (mint! (account principal) (amount int))
   (if (<= amount 0)
@@ -51,16 +55,29 @@
                       ((balance (+ balance amount))))
           (ok amount)))))
 
+;; Transfers tokens to a specified principal.
+(define (transfer! (sender principal) (recipient principal) (amount int))
+  (if (eq? sender recipient)
+    (err 'false)
+    (let ((sender-balance (balance-of sender)))
+    (let ((recipient-balance (balance-of recipient)))
+    (if (or (> amount sender-balance) (<= amount 0))
+      (err 'false)
+      (begin
+        (set-entry! balances
+          ((owner sender))
+          ((balance (- sender-balance amount))))
+        (set-entry! balances
+                    ((owner recipient))
+                    ((balance (+ amount recipient-balance))))
+         (ok 'true)))))))
+        
 ;; Public functions
 
 (define-public (get-total-supply)
-  (fetch-var total-supply))
-
-(define-public (balance-of (account principal))
-  (default-to 0
-    (get balance
-         (fetch-entry balances ((owner account))))))
-
+(let ((ts (fetch-var total-supply)))
+  (ok ts)))
+  
 ;; Update the allowance for a given spender
 (define-public (approve (spender principal) (amount int))
   (if (and (> amount 0)
