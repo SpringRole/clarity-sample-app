@@ -71,7 +71,7 @@
                     ((owner recipient))
                     ((balance (+ amount recipient-balance))))
          (ok 'true)))))))
-        
+       
 ;; Public functions
 
 (define-public (get-total-supply)
@@ -84,3 +84,28 @@
            (increase-allowance! spender tx-sender amount))
       (ok amount)
       (err 'false)))
+
+;; Revoke a given spender
+(define-public (revoke (spender principal))
+  (let ((allowance (allowance-of spender tx-sender)))
+    (if (and (> allowance 0)
+             (decrease-allowance! spender tx-sender allowance))
+        (ok 0)
+        (err 'false))))
+
+;; Transfers tokens to a specified principal.
+(define-public (transfer (recipient principal) (amount int))
+  (if (transfer! tx-sender recipient amount)
+      (ok amount)
+      (err 'false)))
+
+;; Transfers tokens to a specified principal, performed by a spender
+(define-public (transfer-from (owner principal) (recipient principal) (amount int))
+  (let ((allowance (allowance-of tx-sender owner)))
+    (if (or (> amount allowance) (<= amount 0))
+      (err 'false)
+      (if (and
+           (transfer! owner recipient amount)
+           (decrease-allowance! tx-sender owner amount))
+       (ok amount)
+       (err 'false)))))
