@@ -50,14 +50,14 @@
 ;; Function to mint new tokens to specified account.
 (define (mint! (account principal) (amount int))
   (if (<= amount 0)
-    (err 'false)
+    'false
     (let ((balance (balance-of account)))
       (begin
         (set-var! total-supply (+ (fetch-var total-supply) amount))
         (set-entry! balances
           ((owner account))
           ((balance (+ balance amount))))
-        (ok amount)))))
+        'true))))
 
 ;; Function to transfers tokens to a specified recipient.
 (define (transfer! (sender principal) (recipient principal) (amount int))
@@ -93,6 +93,12 @@
     (if (and (> allowance 0) (decrease-allowance! spender tx-sender allowance))
       (ok 'true)
       (err 'false))))
+
+;; Function to mint new tokens to specified account.
+(define-public (mint (account principal) (amount int))
+  (if (mint! account amount)
+    (ok amount)
+    (err 'false)))
 
 ;; Transfers tokens to a specified principal.
 (define-public (transfer (recipient principal) (amount int))
